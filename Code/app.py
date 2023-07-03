@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request
-import pickle
+import pandas as pd
+from model import prep_data, load_model
 
 # Load the trained logistic regression model from the pickle file
-with open('logreg_model.pkl', 'rb') as file:
-    model = pickle.load(file)
+model = load_model('logreg_model.pkl')
 
 # Create a Flask application instance
 app = Flask(__name__)
@@ -12,13 +12,20 @@ app = Flask(__name__)
 @app.route('/predict', methods=['POST'])
 def predict():
     # Retrieve the input data from the request
-    data = flask.request.json
+    data = request.json
+
+    # Preprocess the input data
+    score = prep_data(pd.DataFrame(data))
 
     # Make predictions using the loaded model
-    predictions = model.predict(data)
+    preds = model.predict(score)
+
+    # Map the predictions to meaningful labels
+    labels = ['Not Survived', 'Survived']
+    predicted_labels = [labels[prediction] for prediction in preds]
 
     # Return the predictions as a JSON response
-    return jsonify(predictions.tolist())
+    return jsonify({'predictions': predicted_labels})
 
 # Run the Flask application
 if __name__ == '__main__':
